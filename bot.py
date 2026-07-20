@@ -7,6 +7,10 @@ from database import db
 from utils.logger import logger
 from scheduler import scheduler_loop
 
+# Import explicit programmatic bindings
+from handlers.commands import register_command_handlers
+from handlers.callback import register_callback_handlers
+
 DEFAULT_SITES = [
     {
         "id": "myanime",
@@ -35,21 +39,16 @@ DEFAULT_SITES = [
     {
         "id": "anime4i",
         "name": "Anime4i",
-        "url": "https://anime4i.com",
-        "rss_url": "https://anime4i.com/feed/"
+        "url": "https://anime4i.dev",
+        "rss_url": "https://anime4i.dev/feed/"
     }
 ]
 
 async def handle_health_check(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     """
-    Handles incoming TCP/HTTP health probes from Koyeb.
-    Responds with HTTP 200 OK and terminates the connection cleanly.
+    Instantly responds with HTTP 200 OK without blocking on read.
+    This satisfies both TCP and HTTP health checks immediately.
     """
-    try:
-        await reader.read(1024)
-    except Exception:
-        pass
-
     response = (
         "HTTP/1.1 200 OK\r\n"
         "Content-Type: text/plain\r\n"
@@ -63,14 +62,13 @@ async def handle_health_check(reader: asyncio.StreamReader, writer: asyncio.Stre
     except Exception:
         pass
     finally:
-        writer.close()
         try:
+            writer.close()
             await writer.wait_closed()
         except Exception:
             pass
 
 async def start_health_check_server():
-    """Starts the TCP health check server on the port assigned by Koyeb."""
     port = int(os.getenv("PORT", "8000"))
     try:
         server = await asyncio.start_server(handle_health_check, "0.0.0.0", port)
@@ -86,8 +84,7 @@ class TelegramBot:
             "rss_bot",
             api_id=config.API_ID,
             api_hash=config.API_HASH,
-            bot_token=config.BOT_TOKEN,
-            plugins=dict(root="handlers")
+            bot_token=config.BOT_TOKEN
         )
         self.scheduler_task = None
         self.health_server_task = None
@@ -108,31 +105,39 @@ class TelegramBot:
                 )
                 logger.info(f"Registered default site: {site['name']}")
 
-        # Start health check server alongside Pyrogram
+        # Register Handlers Programmatically
+        register_command_handlers(self.app)
+        register_callback_handlers(self.app)
+
         self.health_server_task = asyncio.create_task(start_health_check_server())
 
         await self.app.start()
-        logger.info("Bot started successfully (Polling Mode with Health Check).")
+        logger.info("Bot started successfully (Polling Mode with Programmatic Handlers).")
 
         self.scheduler_task = asyncio.create_task(scheduler_loop(self.app))
         await idle()
 
+    async def stop(self):
         logger.info("Shutting down...")
         if self.scheduler_task:
             self.scheduler_task.cancel()
-            try:
-                await self.scheduler_task
-            except asyncio.CancelledError:
-                pass
         if self.health_server_task:
             self.health_server_task.cancel()
-            try:
-                await self.health_server_task
-            except asyncio.CancelledError:
-                pass
-        await self.app.stop()
+        
+        try:
+            await self.app.stop(block=False)
+        except Exception as e:
+            logger.warning(f"Error while stopping Pyrogram client: {e}")
         logger.info("Bot execution terminated successfully.")
 
-if __name__ == "__main__":
+async def main():
     bot = TelegramBot()
-    asyncio.run(bot.start())
+    try:
+        await bot.start()
+    except (KeyboardInterrupt, asyncio.CancelledError):
+        pass
+    finally:
+        await bot.stop()
+
+if __name__ == "__main__":
+    asyncio.run(main())
