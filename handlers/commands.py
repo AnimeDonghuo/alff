@@ -31,6 +31,7 @@ async def help_cmd(client: Client, message: Message):
         "👉 <code>/setinterval &lt;minutes&gt;</code> - Update loop interval\n"
         "👉 <code>/status</code> - Current runtime metrics\n"
         "👉 <code>/reload</code> - Run immediate check on all sites\n"
+        "👉 <code>/reupload &lt;site_id&gt; [post_url]</code> - Force manual upload of a post\n"
     )
     await message.reply_text(help_text)
 
@@ -217,6 +218,82 @@ async def reload_cmd(client: Client, message: Message):
         
     await status_msg.edit_text("✅ <i>Manual check complete. All channels updated!</i>")
 
+async def reupload_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else 0
+    logger.info(f"[UPDATE] Received /reupload command from user: {user_id}")
+    
+    parts = message.text.split()
+    if len(parts) < 2:
+        return await message.reply_text("❌ Usage: <code>/reupload &lt;site_id&gt; [post_url]</code>")
+    
+    site_id = parts[1]
+    post_url = parts[2] if len(parts) >= 3 else None
+    
+    status_msg = await message.reply_text(f"🔄 <i>Processing manual re-upload for site: {site_id}...</i>")
+    
+    site_info = await db.get_site(site_id)
+    if not site_info:
+        return await status_msg.edit_text(f"❌ Site ID <code>{site_id}</code> is not registered in the database.")
+        
+    site_name = site_info["name"]
+    default_server_idx = site_info["default_server_index"]
+    
+    from utils.rss import get_scraper_by_id
+    scraper = get_scraper_by_id(site_id, default_server_idx=default_server_idx, site_url=site_info["url"])
+    if not scraper:
+        return await status_msg.edit_text("❌ Failed to initiate scraper.")
+        
+    try:
+        if not post_url:
+            await status_msg.edit_text(f"🔄 <i>Fetching latest post link from {site_name}...</i>")
+            latest_posts = await scraper.get_latest()
+            if not latest_posts:
+                return await status_msg.edit_text(f"❌ No posts found on {site_name}.")
+            post_url = latest_posts[0]["url"]
+            
+        await status_msg.edit_text(f"🔄 <i>Scraping details for: {post_url}...</i>")
+        post_data = await scraper.get_post(post_url)
+        if not post_data:
+            return await status_msg.edit_text(f"❌ Failed to parse page content from: {post_url}")
+            
+        post_data["site_name"] = site_name
+        
+        from utils.formatter import format_post_message, generate_post_buttons
+        message_text = format_post_message(post_data)
+        reply_markup = generate_post_buttons(post_url, post_data.get("selected_embed", ""))
+        
+        from scheduler import download_image, send_post_with_retry
+        thumbnail_url = post_data.get("thumbnail")
+        photo_bytes = None
+        if thumbnail_url:
+            photo_bytes = await download_image(thumbnail_url, scraper.headers)
+            
+        channels = await db.get_channels_for_site(site_id)
+        default_channel_str = await db.get_setting("default_channel")
+        default_channel = int(default_channel_str) if default_channel_str else None
+
+        all_target_channels = set(channels)
+        if default_channel:
+            all_target_channels.add(default_channel)
+
+        if not all_target_channels:
+            return await status_msg.edit_text(f"❌ No channels mapped to site {site_id} to receive the re-upload.")
+            
+        await status_msg.edit_text(f"📤 <i>Sending post to {len(all_target_channels)} target channels...</i>")
+        
+        for channel in all_target_channels:
+            await send_post_with_retry(client, channel, message_text, reply_markup, photo_bytes)
+            await asyncio.sleep(1.0)
+            
+        await db.add_upload(site_id, post_url)
+        await status_msg.edit_text(f"✅ Successfully re-uploaded post to registered channels!")
+        
+    except Exception as e:
+        logger.error(f"Error during manual reupload: {e}")
+        await status_msg.edit_text(f"❌ Error while re-uploading: {e}")
+    finally:
+        await scraper.close()
+
 def register_command_handlers(app: Client):
     app.add_handler(MessageHandler(start_cmd, filters.command("start")))
     app.add_handler(MessageHandler(help_cmd, filters.command("help")))
@@ -231,3 +308,4 @@ def register_command_handlers(app: Client):
     app.add_handler(MessageHandler(set_interval_cmd, filters.command("setinterval")))
     app.add_handler(MessageHandler(status_cmd, filters.command("status")))
     app.add_handler(MessageHandler(reload_cmd, filters.command("reload")))
+    app.add_handler(MessageHandler(reupload_cmd, filters.command("reupload")))
