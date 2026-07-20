@@ -1,24 +1,21 @@
 # handlers/commands.py
 from pyrogram import Client, filters
 from pyrogram.types import Message
+from pyrogram.handlers import MessageHandler
 import config
 from database import db
 from utils.logger import logger
 import asyncio
 
-owner_filter = filters.create(lambda _, __, m: m.from_user and m.from_user.id == config.OWNER_ID)
-
-@Client.on_message(filters.command("start") & owner_filter)
 async def start_cmd(client: Client, message: Message):
     await message.reply_text(
         "👋 Welcome to the <b>Telegram RSS Automation Bot</b>!\n\n"
-        "Use /help to view all available owner settings and control commands."
+        "Use /help to view all available settings and control commands."
     )
 
-@Client.on_message(filters.command("help") & owner_filter)
 async def help_cmd(client: Client, message: Message):
     help_text = (
-        "⚙️ <b>Owner Settings Commands:</b>\n\n"
+        "⚙️ <b>Settings Commands:</b>\n\n"
         "👉 <code>/sites</code> - List registered website scrapers\n"
         "👉 <code>/addsite &lt;id&gt; &lt;name&gt; &lt;url&gt; &lt;rss_url&gt;</code> - Add/Update site\n"
         "👉 <code>/removesite &lt;id&gt;</code> - Remove a site scraper\n\n"
@@ -33,7 +30,6 @@ async def help_cmd(client: Client, message: Message):
     )
     await message.reply_text(help_text)
 
-@Client.on_message(filters.command("addsite") & owner_filter)
 async def add_site_cmd(client: Client, message: Message):
     parts = message.text.split(maxsplit=4)
     if len(parts) < 5:
@@ -43,7 +39,6 @@ async def add_site_cmd(client: Client, message: Message):
     await db.add_site(site_id, name, url, rss_url)
     await message.reply_text(f"✅ Website <b>{name}</b> ({site_id}) added/updated successfully.")
 
-@Client.on_message(filters.command("removesite") & owner_filter)
 async def remove_site_cmd(client: Client, message: Message):
     parts = message.text.split()
     if len(parts) < 2:
@@ -53,7 +48,6 @@ async def remove_site_cmd(client: Client, message: Message):
     await db.remove_site(site_id)
     await message.reply_text(f"✅ Website <code>{site_id}</code> removed from scraping engine.")
 
-@Client.on_message(filters.command("sites") & owner_filter)
 async def sites_cmd(client: Client, message: Message):
     sites = await db.get_sites()
     if not sites:
@@ -69,7 +63,6 @@ async def sites_cmd(client: Client, message: Message):
         )
     await message.reply_text(msg)
 
-@Client.on_message(filters.command("addchannel") & owner_filter)
 async def add_channel_cmd(client: Client, message: Message):
     parts = message.text.split()
     if len(parts) < 3:
@@ -88,7 +81,6 @@ async def add_channel_cmd(client: Client, message: Message):
     await db.add_channel(channel_id, site_id)
     await message.reply_text(f"✅ Channel <code>{channel_id}</code> mapped to receive posts from <b>{site['name']}</b>.")
 
-@Client.on_message(filters.command("removechannel") & owner_filter)
 async def remove_channel_cmd(client: Client, message: Message):
     parts = message.text.split()
     if len(parts) < 3:
@@ -103,7 +95,6 @@ async def remove_channel_cmd(client: Client, message: Message):
     await db.remove_channel(channel_id, site_id)
     await message.reply_text(f"✅ Channel mapping for <code>{channel_id}</code> -> <code>{site_id}</code> removed.")
 
-@Client.on_message(filters.command("channels") & owner_filter)
 async def channels_cmd(client: Client, message: Message):
     mappings = await db.get_all_channel_mappings()
     if not mappings:
@@ -114,7 +105,6 @@ async def channels_cmd(client: Client, message: Message):
         msg += f"🔸 <code>{map_rule['channel_id']}</code> ➡️ receives <code>{map_rule['site_id']}</code>\n"
     await message.reply_text(msg)
 
-@Client.on_message(filters.command("defaultchannel") & owner_filter)
 async def default_channel_cmd(client: Client, message: Message):
     parts = message.text.split()
     if len(parts) < 2:
@@ -132,7 +122,6 @@ async def default_channel_cmd(client: Client, message: Message):
         await db.set_setting("default_channel", str(channel_id))
         await message.reply_text(f"✅ Default owner channel updated to: <code>{channel_id}</code>.")
 
-@Client.on_message(filters.command("setserver") & owner_filter)
 async def set_server_cmd(client: Client, message: Message):
     parts = message.text.split()
     if len(parts) < 3:
@@ -151,7 +140,6 @@ async def set_server_cmd(client: Client, message: Message):
     await db.set_site_server(site_id, srv_idx)
     await message.reply_text(f"✅ Default server index for <b>{site['name']}</b> set to: <code>{srv_idx}</code>.")
 
-@Client.on_message(filters.command("setinterval") & owner_filter)
 async def set_interval_cmd(client: Client, message: Message):
     parts = message.text.split()
     if len(parts) < 2:
@@ -167,7 +155,6 @@ async def set_interval_cmd(client: Client, message: Message):
     await db.set_setting("check_interval", str(minutes))
     await message.reply_text(f"✅ Scraping check interval updated to <b>{minutes}</b> minutes.")
 
-@Client.on_message(filters.command("status") & owner_filter)
 async def status_cmd(client: Client, message: Message):
     interval_str = await db.get_setting("default_channel")
     def_ch = interval_str if interval_str else "Not Set"
@@ -191,7 +178,6 @@ async def status_cmd(client: Client, message: Message):
     )
     await message.reply_text(status_text)
 
-@Client.on_message(filters.command("reload") & owner_filter)
 async def reload_cmd(client: Client, message: Message):
     status_msg = await message.reply_text("🔄 <i>Manual check initiated... Scraping sites...</i>")
     
@@ -204,3 +190,18 @@ async def reload_cmd(client: Client, message: Message):
         await process_site_updates(client, site["id"])
         
     await status_msg.edit_text("✅ <i>Manual check complete. All channels updated!</i>")
+
+def register_command_handlers(app: Client):
+    app.add_handler(MessageHandler(start_cmd, filters.command("start")))
+    app.add_handler(MessageHandler(help_cmd, filters.command("help")))
+    app.add_handler(MessageHandler(sites_cmd, filters.command("sites")))
+    app.add_handler(MessageHandler(add_site_cmd, filters.command("addsite")))
+    app.add_handler(MessageHandler(remove_site_cmd, filters.command("removesite")))
+    app.add_handler(MessageHandler(add_channel_cmd, filters.command("addchannel")))
+    app.add_handler(MessageHandler(remove_channel_cmd, filters.command("removechannel")))
+    app.add_handler(MessageHandler(channels_cmd, filters.command("channels")))
+    app.add_handler(MessageHandler(default_channel_cmd, filters.command("defaultchannel")))
+    app.add_handler(MessageHandler(set_server_cmd, filters.command("setserver")))
+    app.add_handler(MessageHandler(set_interval_cmd, filters.command("setinterval")))
+    app.add_handler(MessageHandler(status_cmd, filters.command("status")))
+    app.add_handler(MessageHandler(reload_cmd, filters.command("reload")))
