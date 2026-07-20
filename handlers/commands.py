@@ -8,12 +8,16 @@ from utils.logger import logger
 import asyncio
 
 async def start_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else 0
+    logger.info(f"[UPDATE] Received /start command from user: {user_id}")
     await message.reply_text(
         "👋 Welcome to the <b>Telegram RSS Automation Bot</b>!\n\n"
         "Use /help to view all available settings and control commands."
     )
 
 async def help_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else 0
+    logger.info(f"[UPDATE] Received /help command from user: {user_id}")
     help_text = (
         "⚙️ <b>Settings Commands:</b>\n\n"
         "👉 <code>/sites</code> - List registered website scrapers\n"
@@ -31,6 +35,8 @@ async def help_cmd(client: Client, message: Message):
     await message.reply_text(help_text)
 
 async def add_site_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else 0
+    logger.info(f"[UPDATE] Received /addsite command from user: {user_id}")
     parts = message.text.split(maxsplit=4)
     if len(parts) < 5:
         return await message.reply_text("❌ Usage: <code>/addsite &lt;id&gt; &lt;name&gt; &lt;url&gt; &lt;rss_url&gt;</code>")
@@ -40,6 +46,8 @@ async def add_site_cmd(client: Client, message: Message):
     await message.reply_text(f"✅ Website <b>{name}</b> ({site_id}) added/updated successfully.")
 
 async def remove_site_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else 0
+    logger.info(f"[UPDATE] Received /removesite command from user: {user_id}")
     parts = message.text.split()
     if len(parts) < 2:
         return await message.reply_text("❌ Usage: <code>/removesite &lt;id&gt;</code>")
@@ -49,6 +57,8 @@ async def remove_site_cmd(client: Client, message: Message):
     await message.reply_text(f"✅ Website <code>{site_id}</code> removed from scraping engine.")
 
 async def sites_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else 0
+    logger.info(f"[UPDATE] Received /sites command from user: {user_id}")
     sites = await db.get_sites()
     if not sites:
         return await message.reply_text("⚠️ No websites registered in DB.")
@@ -64,6 +74,8 @@ async def sites_cmd(client: Client, message: Message):
     await message.reply_text(msg)
 
 async def add_channel_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else 0
+    logger.info(f"[UPDATE] Received /addchannel command from user: {user_id}")
     parts = message.text.split()
     if len(parts) < 3:
         return await message.reply_text("❌ Usage: <code>/addchannel &lt;channel_id&gt; &lt;site_id&gt;</code>")
@@ -82,6 +94,8 @@ async def add_channel_cmd(client: Client, message: Message):
     await message.reply_text(f"✅ Channel <code>{channel_id}</code> mapped to receive posts from <b>{site['name']}</b>.")
 
 async def remove_channel_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else 0
+    logger.info(f"[UPDATE] Received /removechannel command from user: {user_id}")
     parts = message.text.split()
     if len(parts) < 3:
         return await message.reply_text("❌ Usage: <code>/removechannel &lt;channel_id&gt; &lt;site_id&gt;</code>")
@@ -96,6 +110,8 @@ async def remove_channel_cmd(client: Client, message: Message):
     await message.reply_text(f"✅ Channel mapping for <code>{channel_id}</code> -> <code>{site_id}</code> removed.")
 
 async def channels_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else 0
+    logger.info(f"[UPDATE] Received /channels command from user: {user_id}")
     mappings = await db.get_all_channel_mappings()
     if not mappings:
         return await message.reply_text("⚠️ No channel mappings found.")
@@ -106,6 +122,8 @@ async def channels_cmd(client: Client, message: Message):
     await message.reply_text(msg)
 
 async def default_channel_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else 0
+    logger.info(f"[UPDATE] Received /defaultchannel command from user: {user_id}")
     parts = message.text.split()
     if len(parts) < 2:
         return await message.reply_text("❌ Usage: <code>/defaultchannel &lt;channel_id&gt;</code> (Use 0 to disable)")
@@ -123,6 +141,8 @@ async def default_channel_cmd(client: Client, message: Message):
         await message.reply_text(f"✅ Default owner channel updated to: <code>{channel_id}</code>.")
 
 async def set_server_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else 0
+    logger.info(f"[UPDATE] Received /setserver command from user: {user_id}")
     parts = message.text.split()
     if len(parts) < 3:
         return await message.reply_text("❌ Usage: <code>/setserver &lt;site_id&gt; &lt;server_index&gt;</code> (where server_index starts at 0)")
@@ -141,6 +161,8 @@ async def set_server_cmd(client: Client, message: Message):
     await message.reply_text(f"✅ Default server index for <b>{site['name']}</b> set to: <code>{srv_idx}</code>.")
 
 async def set_interval_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else 0
+    logger.info(f"[UPDATE] Received /setinterval command from user: {user_id}")
     parts = message.text.split()
     if len(parts) < 2:
         return await message.reply_text("❌ Usage: <code>/setinterval &lt;minutes&gt;</code>")
@@ -156,6 +178,8 @@ async def set_interval_cmd(client: Client, message: Message):
     await message.reply_text(f"✅ Scraping check interval updated to <b>{minutes}</b> minutes.")
 
 async def status_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else 0
+    logger.info(f"[UPDATE] Received /status command from user: {user_id}")
     interval_str = await db.get_setting("default_channel")
     def_ch = interval_str if interval_str else "Not Set"
     loop_interval = await db.get_setting("check_interval") or str(config.DEFAULT_CHECK_INTERVAL)
@@ -179,6 +203,8 @@ async def status_cmd(client: Client, message: Message):
     await message.reply_text(status_text)
 
 async def reload_cmd(client: Client, message: Message):
+    user_id = message.from_user.id if message.from_user else 0
+    logger.info(f"[UPDATE] Received /reload command from user: {user_id}")
     status_msg = await message.reply_text("🔄 <i>Manual check initiated... Scraping sites...</i>")
     
     sites = await db.get_sites()
