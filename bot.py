@@ -39,16 +39,17 @@ DEFAULT_SITES = [
     {
         "id": "anime4i",
         "name": "Anime4i",
-        "url": "https://anime4i.dev",
-        "rss_url": "https://anime4i.dev/feed/"
+        "url": "https://anime4i.com",
+        "rss_url": "https://anime4i.com/feed/"
     }
 ]
 
 async def handle_health_check(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-    """
-    Instantly responds with HTTP 200 OK without blocking on read.
-    This satisfies both TCP and HTTP health checks immediately.
-    """
+    try:
+        await reader.read(1024)
+    except Exception:
+        pass
+
     response = (
         "HTTP/1.1 200 OK\r\n"
         "Content-Type: text/plain\r\n"
@@ -62,8 +63,8 @@ async def handle_health_check(reader: asyncio.StreamReader, writer: asyncio.Stre
     except Exception:
         pass
     finally:
+        writer.close()
         try:
-            writer.close()
             await writer.wait_closed()
         except Exception:
             pass
@@ -104,6 +105,16 @@ class TelegramBot:
                     rss_url=site["rss_url"]
                 )
                 logger.info(f"Registered default site: {site['name']}")
+            else:
+                # Dynamically update domain url if it's pointing to the old org.cn domain
+                if "org.cn" in existing.get("url", ""):
+                    await db.add_site(
+                        site_id=site["id"],
+                        name=site["name"],
+                        url=site["url"],
+                        rss_url=site["rss_url"]
+                    )
+                    logger.info(f"Updated domain mapping for: {site['name']}")
 
         # Register Handlers Programmatically
         register_command_handlers(self.app)
