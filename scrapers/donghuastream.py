@@ -9,7 +9,7 @@ from utils.logger import logger
 
 class DonghuaStreamScraper(BaseScraper):
     def __init__(self, default_server_idx: int = 0):
-        super().__init__("donghuastream", "https://donghuastream.org.cn", default_server_idx)
+        super().__init__("donghuastream", "https://donghuastream.org", default_server_idx)
 
     async def get_latest(self) -> List[Dict[str, Any]]:
         posts = []
