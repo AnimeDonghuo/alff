@@ -45,8 +45,8 @@ DEFAULT_SITES = [
     {
         "id": "anichin",
         "name": "Anichin",
-        "url": "https://anichin.vip",
-        "rss_url": "https://anichin.vip/feed/"
+        "url": "https://anichin.team",
+        "rss_url": "https://anichin.team/feed/"
     },
     {
         "id": "donghuafun",
@@ -136,14 +136,15 @@ class TelegramBot:
                 )
                 logger.info(f"Registered default site: {site['name']}")
             else:
-                if "org.cn" in existing.get("url", ""):
+                # Forces correction of domains inside database on startup if they have changed or are outdated
+                if existing.get("url") != site["url"] or "anichin.vip" in existing.get("url", ""):
                     await db.add_site(
                         site_id=site["id"],
                         name=site["name"],
                         url=site["url"],
                         rss_url=site["rss_url"]
                     )
-                    logger.info(f"Updated domain mapping for: {site['name']}")
+                    logger.info(f"Updated live domain mapping for: {site['name']} to {site['url']}")
 
         # Register Handlers Programmatically
         register_command_handlers(self.app)
