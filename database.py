@@ -14,13 +14,20 @@ class Database:
     async def connect(self):
         try:
             self.client = motor.motor_asyncio.AsyncIOMotorClient(self.uri)
-            # Auto-resolves database name from the connection URI string
-            self.db = self.client.get_default_database()
-            logger.info("Database connection successfully established with MongoDB Atlas.")
+            try:
+                # Attempt to extract the default database from the connection URI string
+                self.db = self.client.get_default_database()
+            except Exception:
+                # Fallback to a default database name if none is explicitly provided in the URI
+                self.db = self.client["rss_bot"]
+            logger.info("Database connection successfully established with MongoDB.")
         except Exception as e:
             logger.critical(f"Failed to connect to MongoDB engine: {e}")
+            raise e
 
     async def init_db(self):
+        if self.db is None:
+            raise RuntimeError("Database connection not established. Call connect() first.")
         try:
             await self.db.uploads.create_index([("site_id", 1), ("post_url", 1)], unique=True)
             await self.db.channels.create_index([("channel_id", 1), ("site_id", 1)], unique=True)
