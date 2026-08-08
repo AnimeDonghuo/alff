@@ -21,8 +21,8 @@ DEFAULT_SITES = [
     {
         "id": "luciferdonghua",
         "name": "Lucifer Donghua",
-        "url": "https://luciferdonghua.one",
-        "rss_url": "https://luciferdonghua.one/feed/"
+        "url": "https://luciferdonghua.in",
+        "rss_url": "https://luciferdonghua.in/feed/"
     },
     {
         "id": "donghuastream",
@@ -39,8 +39,8 @@ DEFAULT_SITES = [
     {
         "id": "anime4i",
         "name": "Anime4i",
-        "url": "https://anime4i.dev",
-        "rss_url": "https://anime4i.dev/feed/"
+        "url": "https://anime4i.com",
+        "rss_url": "https://anime4i.com/feed/"
     },
     {
         "id": "anichin",
