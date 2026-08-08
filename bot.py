@@ -21,8 +21,8 @@ DEFAULT_SITES = [
     {
         "id": "luciferdonghua",
         "name": "Lucifer Donghua",
-        "url": "https://luciferdonghua.com",
-        "rss_url": "https://luciferdonghua.com/feed/"
+        "url": "https://luciferdonghua.one",
+        "rss_url": "https://luciferdonghua.one/feed/"
     },
     {
         "id": "donghuastream",
@@ -33,14 +33,44 @@ DEFAULT_SITES = [
     {
         "id": "animexin",
         "name": "Animexin",
-        "url": "https://animexin.dev",
-        "rss_url": "https://animexin.dev/feed/"
+        "url": "https://animexin.vip",
+        "rss_url": "https://animexin.vip/feed/"
     },
     {
         "id": "anime4i",
         "name": "Anime4i",
-        "url": "https://anime4i.com",
-        "rss_url": "https://anime4i.com/feed/"
+        "url": "https://anime4i.dev",
+        "rss_url": "https://anime4i.dev/feed/"
+    },
+    {
+        "id": "anichin",
+        "name": "Anichin",
+        "url": "https://anichin.vip",
+        "rss_url": "https://anichin.vip/feed/"
+    },
+    {
+        "id": "donghuafun",
+        "name": "DonghuaFun",
+        "url": "https://donghuafun.com",
+        "rss_url": "https://donghuafun.com/feed/"
+    },
+    {
+        "id": "yunshanid",
+        "name": "YunshanID",
+        "url": "https://yunshanid.site",
+        "rss_url": "https://yunshanid.site/feed/"
+    },
+    {
+        "id": "animekhor",
+        "name": "AnimeKhor",
+        "url": "https://animekhor.org",
+        "rss_url": "https://animekhor.org/feed/"
+    },
+    {
+        "id": "animecube",
+        "name": "AnimeCube",
+        "url": "https://animecube.live",
+        "rss_url": "https://animecube.live/feed/"
     }
 ]
 
@@ -106,7 +136,6 @@ class TelegramBot:
                 )
                 logger.info(f"Registered default site: {site['name']}")
             else:
-                # Dynamically update domain url if it's pointing to the old org.cn domain
                 if "org.cn" in existing.get("url", ""):
                     await db.add_site(
                         site_id=site["id"],
