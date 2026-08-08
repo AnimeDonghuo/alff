@@ -185,12 +185,8 @@ async def status_cmd(client: Client, message: Message):
     def_ch = interval_str if interval_str else "Not Set"
     loop_interval = await db.get_setting("check_interval") or str(config.DEFAULT_CHECK_INTERVAL)
     
-    import aiosqlite
-    async with aiosqlite.connect(db.db_path) as conn:
-        async with conn.execute("SELECT COUNT(*) FROM uploads") as cursor:
-            up_count = (await cursor.fetchone())[0]
-        async with conn.execute("SELECT COUNT(*) FROM channels") as cursor:
-            ch_count = (await cursor.fetchone())[0]
+    up_count = await db.get_uploads_count()
+    ch_count = await db.get_channels_count()
                 
     status_text = (
         "📈 <b>Bot Status & Metrics:</b>\n\n"
@@ -198,7 +194,7 @@ async def status_cmd(client: Client, message: Message):
         f"📢 <b>Default Channel:</b> <code>{def_ch}</code>\n"
         f"📊 <b>Total Uploaded Posts:</b> {up_count}\n"
         f"👥 <b>Active Channel Mappings:</b> {ch_count}\n"
-        f"🐍 <b>Runtime environment:</b> Python 3.12\n"
+        f"🐍 <b>Runtime environment:</b> Python 3.12 (Persistent MongoDB Atlas Mode)\n"
         f"⚙️ <b>Architecture:</b> Async, Koyeb Optimized (&lt;250MB RAM)"
     )
     await message.reply_text(status_text)
