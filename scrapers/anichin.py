@@ -9,7 +9,7 @@ from utils.logger import logger
 
 class AnichinScraper(BaseScraper):
     def __init__(self, default_server_idx: int = 0):
-        super().__init__("anichin", "https://anichin.vip", default_server_idx)
+        super().__init__("anichin", "https://anichin.team", default_server_idx)
 
     async def get_latest(self) -> List[Dict[str, Any]]:
         posts = []
@@ -28,20 +28,10 @@ class AnichinScraper(BaseScraper):
         except Exception as e:
             logger.error(f"Error fetching RSS for Anichin: {e}")
 
+        # Fallback to universal HTML scraper if RSS fails or is blocked
         if not posts:
-            html = await self.fetch_html(self.base_url)
-            if html:
-                parser = HTMLParser(html)
-                for a in parser.css(".post-title a, .entry-title a, article a"):
-                    title = a.text(strip=True)
-                    url = a.attributes.get("href")
-                    if title and url:
-                        posts.append({
-                            "title": title,
-                            "url": url,
-                            "guid": url,
-                            "pub_date": ""
-                        })
+            posts = await self.scrape_latest_html(self.base_url)
+            
         return posts
 
     async def get_post(self, url: str) -> Optional[Dict[str, Any]]:
