@@ -6,42 +6,58 @@ from scrapers.luciferdonghua import LuciferDonghuaScraper
 from scrapers.donghuastream import DonghuaStreamScraper
 from scrapers.animexin import AnimeXinScraper
 from scrapers.anime4i import Anime4iScraper
+
+# Import New Scrapers
+from scrapers.anichin import AnichinScraper
+from scrapers.donghuafun import DonghuaFunScraper
+from scrapers.yunshanid import YunshanIDScraper
+from scrapers.animekhor import AnimeKhorScraper
+from scrapers.animecube import AnimeCubeScraper
+
 from utils.logger import logger
 
 def get_scraper_by_id(site_id: str, default_server_idx: int = 0, site_url: str = "") -> Any:
     site_id = site_id.lower()
     site_url = site_url.lower() if site_url else ""
     
-    # Exact mapping
     scrapers_map = {
         "myanime": MyAnimeScraper,
         "luciferdonghua": LuciferDonghuaScraper,
         "donghuastream": DonghuaStreamScraper,
         "animexin": AnimeXinScraper,
-        "anime4i": Anime4iScraper
+        "anime4i": Anime4iScraper,
+        "anichin": AnichinScraper,
+        "donghuafun": DonghuaFunScraper,
+        "yunshanid": YunshanIDScraper,
+        "animekhor": AnimeKhorScraper,
+        "animecube": AnimeCubeScraper
     }
     
     if site_id in scrapers_map:
         return scrapers_map[site_id](default_server_idx=default_server_idx)
         
-    # Auto-matching by custom string patterns inside ID or URL
+    # Auto-matching patterns inside ID or URL
     if "myanime" in site_id or "myanime" in site_url:
-        logger.info(f"Auto-mapped custom site {site_id} to MyAnimeScraper.")
         return MyAnimeScraper(default_server_idx=default_server_idx)
     elif "lucifer" in site_id or "lucifer" in site_url:
-        logger.info(f"Auto-mapped custom site {site_id} to LuciferDonghuaScraper.")
         return LuciferDonghuaScraper(default_server_idx=default_server_idx)
-    elif "donghua" in site_id or "donghua" in site_url:
-        logger.info(f"Auto-mapped custom site {site_id} to DonghuaStreamScraper.")
+    elif "donghuastream" in site_id or "donghuastream" in site_url:
         return DonghuaStreamScraper(default_server_idx=default_server_idx)
     elif "animexin" in site_id or "animexin" in site_url:
-        logger.info(f"Auto-mapped custom site {site_id} to AnimeXinScraper.")
         return AnimeXinScraper(default_server_idx=default_server_idx)
     elif "anime4i" in site_id or "anime4i" in site_url:
-        logger.info(f"Auto-mapped custom site {site_id} to Anime4iScraper.")
         return Anime4iScraper(default_server_idx=default_server_idx)
+    elif "anichin" in site_id or "anichin" in site_url:
+        return AnichinScraper(default_server_idx=default_server_idx)
+    elif "donghuafun" in site_id or "donghuafun" in site_url:
+        return DonghuaFunScraper(default_server_idx=default_server_idx)
+    elif "yunshan" in site_id or "yunshan" in site_url:
+        return YunshanIDScraper(default_server_idx=default_server_idx)
+    elif "animekhor" in site_id or "animekhor" in site_url:
+        return AnimeKhorScraper(default_server_idx=default_server_idx)
+    elif "animecube" in site_id or "animecube" in site_url:
+        return AnimeCubeScraper(default_server_idx=default_server_idx)
         
-    # Standard fallback
     logger.warning(f"No direct scraper found for {site_id}. Falling back to default scraper.")
     return MyAnimeScraper(default_server_idx=default_server_idx)
 
